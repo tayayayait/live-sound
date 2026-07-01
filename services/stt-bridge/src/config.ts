@@ -11,7 +11,7 @@ export interface BridgeConfig {
 }
 
 const DEFAULT_GOOGLE_SPEECH_LOCATION = "us";
-const DEFAULT_GOOGLE_SPEECH_MODEL = "chirp_3";
+const DEFAULT_GOOGLE_SPEECH_MODEL = "latest_long";
 
 export function loadConfig(env = process.env): BridgeConfig {
   const supabaseUrl = env.SUPABASE_URL;

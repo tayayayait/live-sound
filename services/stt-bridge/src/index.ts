@@ -67,37 +67,48 @@ wss.on("connection", async (ws: WebSocket, _req: unknown, sessionId: string, tok
   try {
     session = await repository.verifySessionToken(sessionId, token);
     send("status.ready", { sessionId });
-    recognizer = createSpeechRecognizer({
-      session,
-      recognizer: config.googleRecognizer,
-      model: config.googleModel,
-      useMock: config.useMockStt,
-      callbacks: {
-        onPartial: async (segment) => {
-          await repository.upsertSegment(sessionId, segment);
-          send("transcript.partial", segment);
-        },
-        onFinal: async (segment) => {
-          finalSegments.push(segment);
-          await repository.upsertSegment(sessionId, segment);
-          send("transcript.final", segment);
+    const startRecognizer = () => {
+      recognizer = createSpeechRecognizer({
+        session,
+        recognizer: config.googleRecognizer,
+        model: config.googleModel,
+        useMock: config.useMockStt,
+        callbacks: {
+          onPartial: async (segment) => {
+            await repository.upsertSegment(sessionId, segment);
+            send("transcript.partial", segment);
+          },
+          onFinal: async (segment) => {
+            finalSegments.push(segment);
+            await repository.upsertSegment(sessionId, segment);
+            send("transcript.final", segment);
 
-          const intervalMs =
-            session.summaryInterval === "manual"
-              ? Number.POSITIVE_INFINITY
-              : session.summaryInterval * 1000;
-          if (Date.now() - lastSummaryAt >= intervalMs) await summarize("cycle");
+            const intervalMs =
+              session.summaryInterval === "manual"
+                ? Number.POSITIVE_INFINITY
+                : session.summaryInterval * 1000;
+            if (Date.now() - lastSummaryAt >= intervalMs) await summarize("cycle");
+          },
+          onError: (error) => {
+            const failure = classifySttFailure(error);
+            if (failure.silent && failure.retryable) {
+              recognizer = null;
+              if (ws.readyState === WebSocket.OPEN) {
+                console.log(`[${sessionId}] STT stream silent reconnect: ${failure.message}`);
+                startRecognizer();
+              }
+              return;
+            }
+            emitError("STT_STREAM_FAILED", failure.message, failure.retryable);
+            recognizer = null;
+            if (ws.readyState === WebSocket.OPEN) {
+              ws.close(failure.retryable ? 1012 : 1011, "STT_STREAM_FAILED");
+            }
+          },
         },
-        onError: (error) => {
-          const failure = classifySttFailure(error);
-          emitError("STT_STREAM_FAILED", failure.message, failure.retryable);
-          recognizer = null;
-          if (ws.readyState === WebSocket.OPEN) {
-            ws.close(failure.retryable ? 1012 : 1011, "STT_STREAM_FAILED");
-          }
-        },
-      },
-    });
+      });
+    };
+    startRecognizer();
   } catch (error) {
     emitError(
       "BRIDGE_CONNECT_FAILED",
@@ -157,7 +168,7 @@ server.listen(config.port, () => {
   console.log(`stt-bridge listening on :${config.port}`);
 });
 
-function classifySttFailure(error: Error): { message: string; retryable: boolean } {
+function classifySttFailure(error: Error): { message: string; retryable: boolean; silent?: boolean } {
   if (/model ".+" does not exist in the location named/i.test(error.message)) {
     return {
       message:
@@ -169,6 +180,14 @@ function classifySttFailure(error: Error): { message: string; retryable: boolean
     return {
       message: "Speech recognition stream closed before audio could be processed.",
       retryable: true,
+      silent: true,
+    };
+  }
+  if (/10 ABORTED.*Stream timed out/i.test(error.message)) {
+    return {
+      message: "STT Stream reached max duration or idle timeout, restarting.",
+      retryable: true,
+      silent: true,
     };
   }
   return { message: error.message, retryable: true };
