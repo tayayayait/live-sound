@@ -1,0 +1,114 @@
+@import "tailwindcss" source(none);
+@source "../src";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-alt: var(--surface-alt);
+  --color-text: var(--text);
+  --color-text-muted: var(--text-muted);
+  --color-text-subtle: var(--text-subtle);
+  --color-border: var(--border);
+  --color-border-subtle: var(--border-subtle);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-soft: var(--primary-soft);
+  --color-primary-foreground: #ffffff;
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-error: var(--error);
+  --color-error-soft: var(--error-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --color-focus: var(--focus);
+
+  /* shadcn compatibility */
+  --color-background: var(--bg);
+  --color-foreground: var(--text);
+  --color-card: var(--surface);
+  --color-card-foreground: var(--text);
+  --color-popover: var(--surface);
+  --color-popover-foreground: var(--text);
+  --color-secondary: var(--surface-alt);
+  --color-secondary-foreground: var(--text);
+  --color-muted: var(--surface-alt);
+  --color-muted-foreground: var(--text-muted);
+  --color-accent-foreground: var(--text);
+  --color-destructive: var(--error);
+  --color-destructive-foreground: #ffffff;
+  --color-input: var(--border);
+  --color-ring: var(--focus);
+
+  --font-sans: "Pretendard", "Inter", "Noto Sans KR", system-ui, -apple-system,
+    BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono: "Inter", "Roboto Mono", ui-monospace, Consolas, monospace;
+}
+
+:root {
+  --bg: #f7f8fa;
+  --surface: #ffffff;
+  --surface-alt: #eef3f4;
+  --text: #172026;
+  --text-muted: #5f6b75;
+  --text-subtle: #7a8792;
+  --border: #c9d3dc;
+  --border-subtle: #e2e8ee;
+  --primary: #006d77;
+  --primary-hover: #005b63;
+  --primary-soft: #d8f1f3;
+  --accent: #b7791f;
+  --accent-soft: #fff1d6;
+  --success: #15803d;
+  --success-soft: #dcfce7;
+  --warning: #b45309;
+  --warning-soft: #fef3c7;
+  --error: #b42318;
+  --error-soft: #fee4e2;
+  --info: #2563eb;
+  --info-soft: #dbeafe;
+  --focus: #0f766e;
+  --radius: 6px;
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border-subtle);
+  }
+  html,
+  body {
+    background-color: var(--color-bg);
+    color: var(--color-text);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@utility panel {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 8px;
+}
